@@ -9,6 +9,7 @@ import com.atyupi.partner_matching.model.domain.User;
 import com.atyupi.partner_matching.model.dto.TeamQuery;
 import com.atyupi.partner_matching.model.request.TeamAddRequest;
 import com.atyupi.partner_matching.model.request.TeamJoinRequest;
+import com.atyupi.partner_matching.model.request.TeamQuitRequest;
 import com.atyupi.partner_matching.model.request.TeamUpdateRequest;
 import com.atyupi.partner_matching.model.vo.TeamUserVO;
 import com.atyupi.partner_matching.service.TeamService;
@@ -49,11 +50,12 @@ public class TeamController {
     }
 
     @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteTeam(int id){
+    public BaseResponse<Boolean> deleteTeam(@RequestBody long id,HttpServletRequest request){
         if(id < 0){
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        boolean result = teamService.removeById(id);
+        User loginUser = userService.getLoginUser(request);
+        boolean result = teamService.deleteTeam(id,loginUser);
         if(!result){
             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"删除失败");
         }
@@ -120,6 +122,16 @@ public class TeamController {
         }
         User loginUser = userService.getLoginUser(request);
         Boolean result = teamService.joinTeam(teamJoinRequest,loginUser);
+        return ResultUtils.success(result);
+    }
+
+    @PostMapping("/quit")
+    public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitRequest teamQuitRequest, HttpServletRequest request){
+        if(teamQuitRequest == null){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        Boolean result = teamService.quitTeam(teamQuitRequest,loginUser);
         return ResultUtils.success(result);
     }
 }

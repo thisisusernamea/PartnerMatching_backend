@@ -4,6 +4,7 @@ import com.atyupi.partner_matching.model.domain.Team;
 import com.atyupi.partner_matching.model.domain.User;
 import com.atyupi.partner_matching.model.dto.TeamQuery;
 import com.atyupi.partner_matching.model.request.TeamJoinRequest;
+import com.atyupi.partner_matching.model.request.TeamQuitRequest;
 import com.atyupi.partner_matching.model.request.TeamUpdateRequest;
 import com.atyupi.partner_matching.model.vo.TeamUserVO;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -46,4 +47,19 @@ public interface TeamService extends IService<Team> {
      * @return
      */
     Boolean joinTeam(TeamJoinRequest teamJoinRequest,User loginUser);
+
+    /**
+     * 用户退出队伍
+     * @param teamQuitRequest
+     * @param loginUser
+     * @return
+     */
+    Boolean quitTeam(TeamQuitRequest teamQuitRequest, User loginUser);
+
+    /**
+     * 队长解散队伍
+     * @param id
+     * @return
+     */
+    boolean deleteTeam(long id,User loginUser);
 }
