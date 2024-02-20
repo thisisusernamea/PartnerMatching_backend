@@ -208,4 +208,19 @@ public class UserController {
         return ResultUtils.success(userPage);
     }
 
+    /**
+     * 根据 标签 匹配当前用户,最相似的几个用户(伙伴匹配系统主页推荐优化)
+     * @param num
+     * @param request
+     * @return
+     */
+    @GetMapping("/match")
+    public BaseResponse<List<User>> matchUsers(int num,HttpServletRequest request){
+        if(num <=0 || num > 20){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        List<User> matchUserList = userService.matchUsers(num, loginUser);
+        return ResultUtils.success(matchUserList);
+    }
 }

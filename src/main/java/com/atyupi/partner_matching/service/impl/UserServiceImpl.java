@@ -4,6 +4,7 @@ import com.atyupi.partner_matching.common.ErrorCode;
 import com.atyupi.partner_matching.constant.UserConstant;
 import com.atyupi.partner_matching.exception.BusinessException;
 import com.atyupi.partner_matching.model.domain.User;
+import com.atyupi.partner_matching.utils.AlgorithmUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.atyupi.partner_matching.service.UserService;
@@ -11,7 +12,9 @@ import com.atyupi.partner_matching.mapper.UserMapper;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import lombok.extern.slf4j.Slf4j;
+import net.bytebuddy.description.method.MethodDescription;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.math3.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
@@ -294,6 +297,63 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public boolean isAdmin(User loginUser) {
         return loginUser != null && loginUser.getUserRole() == UserConstant.ADMIN_ROLE;
+    }
+
+    @Override
+    public List<User> matchUsers(int num, User loginUser) {
+        /**
+         * 获取当前登录用户的标签列表
+         */
+        String loginUserTags = loginUser.getTags();
+        Gson gson = new Gson();
+        List<String> loginUserTagList = gson.fromJson(loginUserTags, new TypeToken<List<String>>() {
+        }.getType());
+        /**
+         * 获取除自己外所有用户的标签列表,并计算相似度
+         */
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        //只查需要的数据
+        queryWrapper.select("id","tags");
+        //过滤标签为空的用户
+        queryWrapper.isNotNull("tags");
+        List<User> userList = this.list(queryWrapper);
+        List<Pair<User,Long>> list = new ArrayList<>();
+        for (int i = 0; i < userList.size(); i++) {
+            User user = userList.get(i);
+            String userTags = user.getTags();
+            //过滤自己以及无标签用户
+            if(loginUser.getId().equals(user.getId()) || StringUtils.isBlank(userTags)){
+                continue;
+            }
+            List<String> userTagList = gson.fromJson(userTags, new TypeToken<List<String>>() {
+            }.getType());
+            //计算相似分数
+            long similarDistance = AlgorithmUtils.minDistance(loginUserTagList,userTagList);
+            list.add(new Pair<>(user,similarDistance));
+        }
+        //按编辑距离 由小到大 排序(相似度从高到低排序)
+        List<Pair<User,Long>> topUserPairList = list.stream().
+                sorted((a,b) -> (int)(a.getValue() - b.getValue())).
+                limit(num).
+                collect(Collectors.toList());
+        List<Long> userIdList = topUserPairList
+                .stream()
+                .map(pair -> pair.getKey().getId())
+                .collect(Collectors.toList());
+        //获取相似用户的详细信息
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.in("id",userIdList);//这样会打乱原本已按照升序好的用户列表
+        //用户数据脱敏
+        Map<Long, List<User>> userIdUserListMap = this.list(userQueryWrapper)
+                .stream()
+                .map(user -> getSafetyUser(user)).
+                collect(Collectors.groupingBy(User::getId));
+        //重新排序
+        List<User> finalUserList = new ArrayList<>();
+        for (Long userId: userIdList) {
+            finalUserList.add(userIdUserListMap.get(userId).get(0));
+        }
+        return finalUserList;
     }
 }
 

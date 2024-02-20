@@ -73,4 +73,11 @@ public interface UserService extends IService<User> {
      */
     boolean isAdmin(HttpServletRequest request);
     boolean isAdmin(User loginUser);
+
+    /**
+     * 根据标签匹配当前登录用户最相似的几个用户
+     * @param num
+     * @param loginUser
+     */
+    List<User> matchUsers(int num, User loginUser);
 }

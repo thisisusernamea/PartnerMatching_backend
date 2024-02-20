@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.*;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
+
 import lombok.Data;
 
 /**
@@ -20,7 +22,7 @@ public class UserTeam implements Serializable {
     private Long id;
 
     /**
-     * 用户id
+     * 用户id(队长id)
      */
     private Long userId;
 
